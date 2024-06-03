@@ -26,6 +26,7 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 import { ProgressBar } from '../../components/ProgressBar';
+import { OverlayFeedback } from '../../components/OverlayFeedback';
 import { THEME } from '../../styles/theme';
 
 interface Params {
@@ -41,6 +42,7 @@ export function Quiz() {
   const [points, setPoints] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [currentQuestion, setCurrentQuestion] = useState(0);
+  const [statusReply, setStatusReply] = useState(0);
   const [quiz, setQuiz] = useState<QuizProps>({} as QuizProps);
   const [alternativeSelected, setAlternativeSelected] = useState<null | number>(
     null
@@ -91,8 +93,11 @@ export function Quiz() {
     }
 
     if (quiz.questions[currentQuestion].correct === alternativeSelected) {
+      setStatusReply(1);
       setPoints((prevState) => prevState + 1);
+      handleNextQuestion();
     } else {
+      setStatusReply(2);
       shakeAnimation();
     }
 
@@ -118,7 +123,12 @@ export function Quiz() {
   function shakeAnimation() {
     shake.value = withSequence(
       withTiming(3, { duration: 400, easing: Easing.bounce }),
-      withTiming(0)
+      withTiming(0, undefined, (finished) => {
+        'worklet';
+        if (finished) {
+          runOnJS(handleNextQuestion)();
+        }
+      })
     );
   }
 
@@ -203,18 +213,14 @@ export function Quiz() {
     setIsLoading(false);
   }, []);
 
-  useEffect(() => {
-    if (quiz.questions) {
-      handleNextQuestion();
-    }
-  }, [points]);
-
   if (isLoading) {
     return <Loading />;
   }
 
   return (
     <View style={styles.container}>
+      <OverlayFeedback status={statusReply} />
+
       <Animated.View style={fixedProgressBarStyles}>
         <Text style={styles.title}>{quiz.title}</Text>
         <ProgressBar
@@ -243,6 +249,7 @@ export function Quiz() {
               question={quiz.questions[currentQuestion]}
               alternativeSelected={alternativeSelected}
               setAlternativeSelected={setAlternativeSelected}
+              onUnmount={() => setStatusReply(0)}
             />
           </Animated.View>
         </GestureDetector>

@@ -8,12 +8,12 @@ import {
   Skia,
   runTiming,
   useValue,
+  Easing,
 } from '@shopify/react-native-skia';
 
 import { styles } from './styles';
 import { THEME } from '../../styles/theme';
 import { useEffect } from 'react';
-import { Easing } from 'react-native-reanimated';
 
 type Props = TouchableOpacityProps & {
   checked: boolean;
